@@ -1,0 +1,119 @@
+/* Global Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Tools Landing Page */
+.tools-landing {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  padding: 2rem 1rem;
+}
+
+.tools-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.tools-header {
+  text-align: center;
+  margin-bottom: 3rem;
+  padding: 2rem 0;
+}
+
+.tools-header h1 {
+  font-size: 3rem;
+  font-weight: 700;
+  color: #000000;
+  margin-bottom: 1rem;
+}
+
+.tools-header p {
+  font-size: 1.25rem;
+  color: #666666;
+}
+
+.tools-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 2rem;
+  margin-bottom: 3rem;
+}
+
+.tool-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.tool-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(200, 82, 42, 0.2);
+}
+
+.tool-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.tool-card h3 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #c8522a;
+  margin-bottom: 0.75rem;
+}
+
+.tool-card p {
+  font-size: 0.95rem;
+  color: #666666;
+  line-height: 1.5;
+}
+
+.tools-footer {
+  text-align: center;
+  padding: 2rem 0;
+  color: #666666;
+  font-size: 0.9rem;
+}
+
+.tools-footer a {
+  color: #c8522a;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.tools-footer a:hover {
+  text-decoration: underline;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .tools-header h1 {
+    font-size: 2rem;
+  }
+
+  .tools-header p {
+    font-size: 1rem;
+  }
+
+  .tools-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}

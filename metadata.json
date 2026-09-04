@@ -1,0 +1,8 @@
+{
+  "name": "PreciseCalcs Tools",
+  "description": "Professional Algebra Solver with step-by-step solutions for equations, inequalities, systems, matrices, series, and complex numbers",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
