@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Divide, Split, Grid2x2, Sparkles, Layers } from 'lucide-react';
+import { Divide, Split, Grid2x2, Sparkles, Layers, History, RotateCcw } from 'lucide-react';
 import { SymbolKeyboard, insertAtCursor, backspaceAtCursor } from '../components/SymbolKeyboard';
 import { StepsView } from '../components/StepsView';
 import { LiveMathPreview } from '../components/LiveMathPreview';
@@ -66,7 +66,8 @@ export const PolynomialTab = ({ decimal }) => {
   const poly2Ref = useRef(null);
   const timerRef = useRef(null);
 
-  const { addSolvedProblem, recalledProblem } = useMathHistory();
+  const { history, addSolvedProblem, recallProblem, recalledProblem } = useMathHistory();
+  const recentPolys = React.useMemo(() => (history || []).filter((h) => h.tab === 'polynomial'), [history]);
 
   const solve = (customP1 = poly1, customP2 = poly2, customMode = mode, customVar = variable) => {
     setIsSolving(true);
@@ -251,9 +252,41 @@ export const PolynomialTab = ({ decimal }) => {
         onToggleAutoSolve={() => setAutoSolve((prev) => !prev)}
       />
 
+      {/* Recent Polynomial Problems */}
+      {recentPolys.length > 0 && (
+        <div className="as-recent-row" data-testid="recent-poly-chips">
+          <span className="as-recent-label">
+            <History size={12} />
+            <span>Recent:</span>
+          </span>
+          <div className="as-recent-chip-list">
+            {recentPolys.slice(0, 4).map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className="as-recent-chip"
+                data-testid={`recent-poly-chip-${item.id}`}
+                onClick={() => recallProblem(item)}
+                title={`Click to re-solve: ${item.expression}`}
+              >
+                <RotateCcw size={10} className="as-recent-chip-icon" />
+                <span className="as-recent-chip-expr">
+                  <MathBlock tex={item.tex || item.expression} inline={true} />
+                </span>
+                {(item.answerTex || item.answer) && (
+                  <span className="as-recent-chip-ans">
+                    <MathBlock tex={item.answerTex || item.answer} inline={true} />
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Example chips */}
       <div className="as-examples">
-        <span className="as-examples-label">Examples:</span>
+        <span className="as-examples-label">Try:</span>
         {currentModeObj.examples.map((ex, i) => (
           <button
             key={i}

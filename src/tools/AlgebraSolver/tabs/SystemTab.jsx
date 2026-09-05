@@ -1,9 +1,10 @@
 import React, { useRef, useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Plus, Minus, Grid3x3, Split, ArrowRightLeft, Layers, Sparkles, Orbit } from 'lucide-react';
+import { Plus, Minus, Grid3x3, Split, ArrowRightLeft, Layers, Sparkles, Orbit, History, RotateCcw } from 'lucide-react';
 import { SymbolKeyboard, insertAtCursor, backspaceAtCursor } from '../components/SymbolKeyboard';
 import { StepsView } from '../components/StepsView';
 import { LiveMathPreview } from '../components/LiveMathPreview';
+import { MathBlock } from '../components/MathBlock';
 import { solveSystem } from '../engine/system';
 import { toLiveMathTex } from '../engine/liveMath.js';
 import { useMathHistory } from '../context/HistoryContext';
@@ -64,7 +65,8 @@ export const SystemTab = ({ decimal }) => {
   const refs = useRef([]);
   const timerRef = useRef(null);
 
-  const { addSolvedProblem, recalledProblem } = useMathHistory();
+  const { history, addSolvedProblem, recallProblem, recalledProblem } = useMathHistory();
+  const recentSystems = useMemo(() => (history || []).filter((h) => h.tab === 'system'), [history]);
 
   // Detect whether current equations are non-linear
   const isNonLinear = useMemo(() => {
@@ -265,8 +267,41 @@ export const SystemTab = ({ decimal }) => {
         onToggleAutoSolve={() => setAutoSolve((prev) => !prev)}
       />
 
+      {/* Recent System Problems */}
+      {recentSystems.length > 0 && (
+        <div className="as-recent-row" data-testid="recent-system-chips">
+          <span className="as-recent-label">
+            <History size={12} />
+            <span>Recent:</span>
+          </span>
+          <div className="as-recent-chip-list">
+            {recentSystems.slice(0, 4).map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className="as-recent-chip"
+                data-testid={`recent-system-chip-${item.id}`}
+                onClick={() => recallProblem(item)}
+                title={`Click to re-solve: ${item.expression}`}
+              >
+                <RotateCcw size={10} className="as-recent-chip-icon" />
+                <span className="as-recent-chip-expr">
+                  <MathBlock tex={item.tex || item.expression} inline={true} />
+                </span>
+                {(item.answerTex || item.answer) && (
+                  <span className="as-recent-chip-ans">
+                    <MathBlock tex={item.answerTex || item.answer} inline={true} />
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Example chips */}
       <div className="as-examples">
-        <span className="as-examples-label">Examples:</span>
+        <span className="as-examples-label">Try:</span>
         {EXAMPLES.map((ex, i) => (
           <button
             key={i}
@@ -280,7 +315,11 @@ export const SystemTab = ({ decimal }) => {
               solve(ex.vars, ex.eqs, ex.method || method);
             }}
           >
-            <strong>{ex.label}:</strong> {ex.eqs.join(' ; ')}
+            <strong>{ex.label}:</strong>{' '}
+            <MathBlock
+              tex={ex.eqs.map((e) => toLiveMathTex(e).tex || e).join(',\\; ')}
+              inline={true}
+            />
           </button>
         ))}
       </div>

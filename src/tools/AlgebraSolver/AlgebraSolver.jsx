@@ -11,6 +11,7 @@ import { SeriesTab } from './tabs/SeriesTab';
 import { ComplexTab } from './tabs/ComplexTab';
 import { HistoryProvider, useMathHistory } from './context/HistoryContext';
 import { HistoryPanel } from './components/HistoryPanel';
+import { ToolSuiteHeader } from '../../components/ToolSuiteHeader';
 
 const TABS = [
   { key: 'equation', label: 'Equation', icon: FunctionSquare, Component: EquationTab },
@@ -108,6 +109,7 @@ export default function AlgebraSolver() {
 
   return (
     <div className="algebra-solver" data-testid="algebra-solver">
+      <ToolSuiteHeader />
       <main className="as-main">
         {showSharedNotice && (
           <div className="as-shared-notice" data-testid="shared-problem-notice">

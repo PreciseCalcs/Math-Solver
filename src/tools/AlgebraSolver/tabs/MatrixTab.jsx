@@ -1,10 +1,38 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { History, RotateCcw } from 'lucide-react';
 import { StepsView } from '../components/StepsView';
 import { MathBlock } from '../components/MathBlock';
 import { MATRIX_OPS } from '../engine/matrix';
 import { useMathHistory } from '../context/HistoryContext';
 import { cleanPlainMath } from '../utils/exportUtils';
+
+const MATRIX_EXAMPLES = [
+  {
+    label: '2×2 Det',
+    op: 'determinant',
+    cells: [['3', '4'], ['2', '-1']],
+    tex: '\\begin{bmatrix} 3 & 4 \\\\ 2 & -1 \\end{bmatrix}',
+  },
+  {
+    label: '3×3 Det',
+    op: 'determinant',
+    cells: [['2', '1', '-1'], ['-3', '-1', '2'], ['-2', '1', '2']],
+    tex: '\\begin{bmatrix} 2 & 1 & -1 \\\\ -3 & -1 & 2 \\\\ -2 & 1 & 2 \\end{bmatrix}',
+  },
+  {
+    label: '2×2 Inverse',
+    op: 'inverse',
+    cells: [['4', '7'], ['2', '6']],
+    tex: '\\begin{bmatrix} 4 & 7 \\\\ 2 & 6 \\end{bmatrix}',
+  },
+  {
+    label: '3×3 Transpose',
+    op: 'transpose',
+    cells: [['1', '2', '3'], ['0', '-1', '4'], ['5', '2', '0']],
+    tex: '\\begin{bmatrix} 1 & 2 & 3 \\\\ 0 & -1 & 4 \\\\ 5 & 2 & 0 \\end{bmatrix}',
+  },
+];
 
 const DEFAULT = [
   ['2', '1', '-1'],
@@ -39,7 +67,8 @@ export const MatrixTab = ({ decimal }) => {
   const [result, setResult] = useState(null);
   const rows = cells.length, cols = cells[0].length;
 
-  const { addSolvedProblem, recalledProblem } = useMathHistory();
+  const { history, addSolvedProblem, recallProblem, recalledProblem } = useMathHistory();
+  const recentMatrices = useMemo(() => (history || []).filter((h) => h.tab === 'matrix'), [history]);
 
   const setCell = (r, c, val) =>
     setCells((prev) => prev.map((row, i) => (i === r ? row.map((x, j) => (j === c ? val : x)) : row)));
@@ -140,10 +169,68 @@ export const MatrixTab = ({ decimal }) => {
       </div>
       <p className="as-hint">Fractions allowed in cells, e.g. 1/2 or -3/4.</p>
 
+      {/* Recent Matrix Problems */}
+      {recentMatrices.length > 0 && (
+        <div className="as-recent-row" data-testid="recent-matrix-chips">
+          <span className="as-recent-label">
+            <History size={12} />
+            <span>Recent:</span>
+          </span>
+          <div className="as-recent-chip-list">
+            {recentMatrices.slice(0, 4).map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className="as-recent-chip"
+                data-testid={`recent-matrix-chip-${item.id}`}
+                onClick={() => recallProblem(item)}
+                title={`Click to re-solve: ${item.expression}`}
+              >
+                <RotateCcw size={10} className="as-recent-chip-icon" />
+                <span className="as-recent-chip-expr">
+                  <MathBlock tex={item.tex || item.expression} inline={true} />
+                </span>
+                {(item.answerTex || item.answer) && (
+                  <span className="as-recent-chip-ans">
+                    <MathBlock tex={item.answerTex || item.answer} inline={true} />
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Example Chips */}
+      <div className="as-examples">
+        <span className="as-examples-label">Try:</span>
+        {MATRIX_EXAMPLES.map((ex, i) => (
+          <button
+            key={i}
+            type="button"
+            className="as-example-chip"
+            data-testid={`matrix-example-${i}`}
+            onClick={() => {
+              setOp(ex.op);
+              setCells(ex.cells);
+              const conf = MATRIX_OPS[ex.op];
+              try {
+                setResult(conf.fn(ex.cells, decimal));
+              } catch (e) {
+                setResult({ error: e.message });
+              }
+            }}
+          >
+            <strong>{ex.label}:</strong>{' '}
+            <MathBlock tex={ex.tex} inline={true} />
+          </button>
+        ))}
+      </div>
+
       {cells.length > 0 && (
         <div className="as-live-math-container" style={{ marginTop: '12px', marginBottom: '12px' }}>
           <div className="as-live-math-header">
-            <span className="as-live-math-title">Matrix Preview (LaTeX)</span>
+            <span className="as-live-math-title">Preview</span>
           </div>
           <div className="as-live-math-card">
             <MathBlock tex={`\\begin{bmatrix} ${cells.map((r) => r.join(' & ')).join(' \\\\ ')} \\end{bmatrix}`} />

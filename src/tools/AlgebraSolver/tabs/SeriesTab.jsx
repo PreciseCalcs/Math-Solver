@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { History, RotateCcw } from 'lucide-react';
 import { StepsView } from '../components/StepsView';
 import { MathBlock } from '../components/MathBlock';
 import { arithmeticSeries, geometricSeries, summation, binomialExpansion } from '../engine/series';
@@ -12,6 +13,25 @@ const MODES = [
   { key: 'summation', label: 'Σ Summation' },
   { key: 'binomial', label: 'Binomial' },
 ];
+
+const SERIES_EXAMPLES = {
+  arithmetic: [
+    { label: 'a₁=2, d=3, n=10', ar: { a1: '2', d: '3', n: '10' }, tex: 'a_1=2,\\; d=3,\\; n=10' },
+    { label: 'a₁=5, d=-2, n=15', ar: { a1: '5', d: '-2', n: '15' }, tex: 'a_1=5,\\; d=-2,\\; n=15' },
+  ],
+  geometric: [
+    { label: 'a₁=3, r=1/2, n=8', geo: { a1: '3', r: '1/2', n: '8' }, tex: 'a_1=3,\\; r=\\frac{1}{2},\\; n=8' },
+    { label: 'a₁=2, r=3, n=6', geo: { a1: '2', r: '3', n: '6' }, tex: 'a_1=2,\\; r=3,\\; n=6' },
+  ],
+  summation: [
+    { label: 'Σ k²', sum: { expr: 'k^2', varName: 'k', from: '1', to: '10' }, tex: '\\sum_{k=1}^{10} k^2' },
+    { label: 'Σ (2k+1)', sum: { expr: '2k+1', varName: 'k', from: '1', to: '12' }, tex: '\\sum_{k=1}^{12} (2k+1)' },
+  ],
+  binomial: [
+    { label: '(2x - 3)⁴', bin: { a: '2x', b: '-3', n: '4' }, tex: '(2x - 3)^4' },
+    { label: '(x + y)⁵', bin: { a: 'x', b: 'y', n: '5' }, tex: '(x + y)^5' },
+  ],
+};
 
 const Field = ({ id, label, value, onChange, placeholder }) => (
   <div className="as-field">
@@ -57,7 +77,8 @@ export const SeriesTab = ({ decimal }) => {
     n: searchParams.get('n') || '4',
   });
 
-  const { addSolvedProblem, recalledProblem } = useMathHistory();
+  const { history, addSolvedProblem, recallProblem, recalledProblem } = useMathHistory();
+  const recentSeries = useMemo(() => (history || []).filter((h) => h.tab === 'series'), [history]);
 
   const compute = (targetMode = mode) => {
     if (targetMode === 'arithmetic') setResult(arithmeticSeries(ar, { decimal }));
@@ -186,10 +207,66 @@ export const SeriesTab = ({ decimal }) => {
       )}
       {mode === 'binomial' && <p className="as-hint">Expands (a + b)ⁿ — e.g. (2x − 3)⁴. Enter the second term with its sign.</p>}
 
+      {/* Recent Series Problems */}
+      {recentSeries.length > 0 && (
+        <div className="as-recent-row" data-testid="recent-series-chips">
+          <span className="as-recent-label">
+            <History size={12} />
+            <span>Recent:</span>
+          </span>
+          <div className="as-recent-chip-list">
+            {recentSeries.slice(0, 4).map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className="as-recent-chip"
+                data-testid={`recent-series-chip-${item.id}`}
+                onClick={() => recallProblem(item)}
+                title={`Click to re-solve: ${item.expression}`}
+              >
+                <RotateCcw size={10} className="as-recent-chip-icon" />
+                <span className="as-recent-chip-expr">
+                  <MathBlock tex={item.tex || item.expression} inline={true} />
+                </span>
+                {(item.answerTex || item.answer) && (
+                  <span className="as-recent-chip-ans">
+                    <MathBlock tex={item.answerTex || item.answer} inline={true} />
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Example Chips */}
+      {SERIES_EXAMPLES[mode] && (
+        <div className="as-examples">
+          <span className="as-examples-label">Try:</span>
+          {SERIES_EXAMPLES[mode].map((ex, i) => (
+            <button
+              key={i}
+              type="button"
+              className="as-example-chip"
+              data-testid={`series-example-${mode}-${i}`}
+              onClick={() => {
+                if (mode === 'arithmetic') setAr(ex.ar);
+                else if (mode === 'geometric') setGeo(ex.geo);
+                else if (mode === 'summation') setSum(ex.sum);
+                else if (mode === 'binomial') setBin(ex.bin);
+              }}
+            >
+              <strong>{ex.label}:</strong>{' '}
+              <MathBlock tex={ex.tex} inline={true} />
+            </button>
+          ))}
+        </div>
+      )}
+
       {probTex && (
         <div className="as-live-math-container" style={{ marginTop: '12px', marginBottom: '12px' }}>
           <div className="as-live-math-header">
-            <span className="as-live-math-title">Formula Preview (LaTeX)</span>
+            <span className="as-live-math-title">Preview</span>
           </div>
           <div className="as-live-math-card">
             <MathBlock tex={probTex} />

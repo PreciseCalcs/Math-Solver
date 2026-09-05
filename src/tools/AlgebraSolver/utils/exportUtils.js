@@ -38,7 +38,10 @@ export function generateLatexDocument({ problemTitle, problemTex, steps = [], an
       const title = (step.title || `Step ${idx + 1}`).replace(/[#$%&_]/g, '\\$&');
       const desc = step.desc ? `\n${step.desc.replace(/[#$%&_]/g, '\\$&')}\n` : '';
       const mathBlock = step.tex ? `\n\\[\n${step.tex}\n\\]\n` : '';
-      return `\\subsection*{Step ${idx + 1}: ${title}}${desc}${mathBlock}`;
+      const commentBlock = (step.comment || step.note)
+        ? `\n\\par\\noindent\\textbf{Comment/Note:} ${(step.comment || step.note).replace(/[#$%&_]/g, '\\$&')}\n`
+        : '';
+      return `\\subsection*{Step ${idx + 1}: ${title}}${desc}${mathBlock}${commentBlock}`;
     })
     .join('\n');
 
@@ -142,6 +145,9 @@ export function generateMarkdown({ problemTitle, problemTex, steps = [], answerT
       }
       if (s.tex) {
         md += `$$\n${s.tex}\n$$\n\n`;
+      }
+      if (s.comment || s.note) {
+        md += `> **Comment/Note:** ${s.comment || s.note}\n\n`;
       }
     });
   }

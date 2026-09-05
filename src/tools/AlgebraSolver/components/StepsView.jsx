@@ -15,6 +15,10 @@ import {
   Eye,
   EyeOff,
   Sparkles,
+  MessageSquarePlus,
+  MessageSquare,
+  Edit3,
+  Trash2,
 } from 'lucide-react';
 import { MathBlock, MathText } from './MathBlock';
 import { ExportShareModal } from './ExportShareModal';
@@ -38,12 +42,15 @@ export const StepsView = ({
   const [copiedKey, setCopiedKey] = useState(null);
   const [showGraph, setShowGraph] = useState(true);
 
-  const rawInput = problemTex || shareParams?.q || '';
+  const rawInput = shareParams?.q || problemTitle || problemTex || '';
   const isPlottable = Boolean(
     rawInput &&
     typeof rawInput === 'string' &&
     rawInput.trim().length > 0 &&
     !result?.error &&
+    shareParams?.tab !== 'complex' &&
+    shareParams?.tab !== 'matrix' &&
+    shareParams?.tab !== 'series' &&
     !rawInput.includes('\\begin{matrix}') &&
     !rawInput.includes('\\sum') &&
     !rawInput.includes('bmatrix')
@@ -59,6 +66,20 @@ export const StepsView = ({
     }
     return init;
   });
+
+  // Step comments state with live KaTeX rendering
+  const [userComments, setUserComments] = useState({});
+  const [editingStepComment, setEditingStepComment] = useState(null);
+  const [commentDraft, setCommentDraft] = useState('');
+
+  const resultWithComments = React.useMemo(() => {
+    if (!result?.steps) return result;
+    const steps = result.steps.map((s, idx) => ({
+      ...s,
+      comment: userComments[idx] || s.comment || s.note,
+    }));
+    return { ...result, steps };
+  }, [result, userComments]);
 
   // Reset steps expansion when result changes
   useEffect(() => {
@@ -356,7 +377,8 @@ export const StepsView = ({
         <CoordinatePlane
           rawInput={rawInput}
           result={result}
-          variable="x"
+          variable={result?.variable || 'x'}
+          problemTex={problemTex}
         />
       )}
 
@@ -459,6 +481,144 @@ export const StepsView = ({
                           <MathBlock tex={s.tex} copyable={true} />
                         </div>
                       ) : null}
+
+                      {/* Engine-provided step note / comment */}
+                      {(s.comment || s.note) && !userComments[i] && (
+                        <div className="as-step-comment-box" data-testid={`step-engine-comment-${i + 1}`}>
+                          <MessageSquare size={13} className="as-step-comment-icon" />
+                          <div className="as-step-comment-text">
+                            <MathText text={s.comment || s.note} />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* User-added step comment (rendered in live KaTeX / LaTeX) */}
+                      {userComments[i] && editingStepComment !== i && (
+                        <div className="as-step-user-comment" data-testid={`step-comment-${i + 1}`}>
+                          <div className="as-step-user-comment-header">
+                            <span className="as-step-user-comment-label">
+                              <MessageSquare size={12} />
+                              <span>Step Comment / Note (LaTeX enabled):</span>
+                            </span>
+                            <div className="as-step-user-comment-actions">
+                              <button
+                                type="button"
+                                className="as-step-comment-action-btn"
+                                onClick={() => {
+                                  setEditingStepComment(i);
+                                  setCommentDraft(userComments[i]);
+                                }}
+                                title="Edit comment"
+                                data-testid={`edit-step-comment-${i + 1}`}
+                              >
+                                <Edit3 size={11} />
+                                <span>Edit</span>
+                              </button>
+                              <button
+                                type="button"
+                                className="as-step-comment-action-btn del"
+                                onClick={() => {
+                                  setUserComments((prev) => {
+                                    const next = { ...prev };
+                                    delete next[i];
+                                    return next;
+                                  });
+                                }}
+                                title="Delete comment"
+                                data-testid={`delete-step-comment-${i + 1}`}
+                              >
+                                <Trash2 size={11} />
+                              </button>
+                            </div>
+                          </div>
+                          <div className="as-step-user-comment-body" data-testid={`step-comment-rendered-${i + 1}`}>
+                            <MathText text={userComments[i]} />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Active step comment editor with LIVE KaTeX / LaTeX preview */}
+                      {editingStepComment === i && (
+                        <div className="as-step-comment-editor" data-testid={`step-comment-editor-${i + 1}`}>
+                          <div className="as-step-comment-editor-header">
+                            <span className="as-step-comment-editor-title">
+                              <MessageSquarePlus size={13} />
+                              <span>Step Commentary (Live KaTeX / LaTeX Enabled)</span>
+                            </span>
+                          </div>
+                          <textarea
+                            className="as-step-comment-input"
+                            rows={2}
+                            placeholder="Add explanation note with LaTeX e.g. Note that $\sqrt{x^2} = |x|$, or `x \ge 0`..."
+                            value={commentDraft}
+                            onChange={(e) => setCommentDraft(e.target.value)}
+                            data-testid={`step-comment-input-${i + 1}`}
+                            autoFocus
+                          />
+                          {commentDraft.trim() && (
+                            <div className="as-step-comment-live-preview" data-testid={`step-comment-preview-${i + 1}`}>
+                              <div className="as-step-comment-preview-bar">
+                                <span className="as-step-comment-preview-badge">Live KaTeX Render</span>
+                              </div>
+                              <div className="as-step-comment-preview-content">
+                                <MathText text={commentDraft} />
+                              </div>
+                            </div>
+                          )}
+                          <div className="as-step-comment-editor-footer">
+                            <button
+                              type="button"
+                              className="as-step-comment-save-btn"
+                              onClick={() => {
+                                if (commentDraft.trim()) {
+                                  setUserComments((prev) => ({ ...prev, [i]: commentDraft.trim() }));
+                                } else {
+                                  setUserComments((prev) => {
+                                    const next = { ...prev };
+                                    delete next[i];
+                                    return next;
+                                  });
+                                }
+                                setEditingStepComment(null);
+                                setCommentDraft('');
+                              }}
+                              data-testid={`save-step-comment-${i + 1}`}
+                            >
+                              <Check size={12} />
+                              <span>Save Comment</span>
+                            </button>
+                            <button
+                              type="button"
+                              className="as-step-comment-cancel-btn"
+                              onClick={() => {
+                                setEditingStepComment(null);
+                                setCommentDraft('');
+                              }}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Button to add comment if none exists and not editing */}
+                      {!userComments[i] && editingStepComment !== i && (
+                        <div className="as-step-comment-toolbar">
+                          <button
+                            type="button"
+                            className="as-step-add-comment-btn"
+                            onClick={() => {
+                              setEditingStepComment(i);
+                              setCommentDraft('');
+                            }}
+                            data-testid={`add-step-comment-btn-${i + 1}`}
+                            title="Add explanation note or remark with live KaTeX rendering"
+                          >
+                            <MessageSquarePlus size={12} />
+                            <span>Add note / comment</span>
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -472,7 +632,7 @@ export const StepsView = ({
       <ExportShareModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
-        result={result}
+        result={resultWithComments}
         problemTitle={problemTitle}
         problemTex={problemTex}
         shareParams={shareParams}

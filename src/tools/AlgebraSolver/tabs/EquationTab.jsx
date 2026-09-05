@@ -8,6 +8,8 @@ import { solveEquation } from '../engine/equation.js';
 import { useDebouncedSolve } from '../hooks/useDebouncedSolve';
 import { useMathHistory } from '../context/HistoryContext';
 import { cleanPlainMath } from '../utils/exportUtils';
+import { MathBlock } from '../components/MathBlock';
+import { toLiveMathTex } from '../engine/liveMath';
 
 const EXAMPLES = [
   '2(x-3)+5=3x-1',
@@ -120,8 +122,14 @@ export const EquationTab = ({ decimal }) => {
                 title={`Click to re-solve: ${item.expression} ${item.answer ? `→ ${item.answer}` : ''}`}
               >
                 <RotateCcw size={10} className="as-recent-chip-icon" />
-                <span className="as-recent-chip-expr">{item.expression}</span>
-                {item.answer && <span className="as-recent-chip-ans">{item.answer}</span>}
+                <span className="as-recent-chip-expr">
+                  <MathBlock tex={item.tex || toLiveMathTex(item.expression).tex || item.expression} inline={true} />
+                </span>
+                {(item.answerTex || item.answer) && (
+                  <span className="as-recent-chip-ans">
+                    <MathBlock tex={item.answerTex || toLiveMathTex(item.answer).tex || item.answer} inline={true} />
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -138,7 +146,7 @@ export const EquationTab = ({ decimal }) => {
             data-testid={`equation-example-${ex}`}
             onClick={() => handleExample(ex)}
           >
-            {ex}
+            <MathBlock tex={toLiveMathTex(ex).tex || ex} inline={true} />
           </button>
         ))}
       </div>

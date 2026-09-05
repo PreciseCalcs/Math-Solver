@@ -1,6 +1,6 @@
 {
   "name": "PreciseCalcs Tools",
-  "description": "Professional Algebra Solver with step-by-step solutions for equations, inequalities, systems (Gauss-Jordan, Cramer's rule, substitution, matrix inversion, non-linear), polynomial division & multiplication, matrices, series, and complex numbers",
+  "description": "Professional Mathematical Suite with standalone calculators for Matrices, Systems of Equations, Complex Numbers, Series & Sequences, Polynomials, and Algebra with step-by-step solutions, plus roadmap modules for Calculus, Vectors, Numerical Methods, and Trigonometry",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

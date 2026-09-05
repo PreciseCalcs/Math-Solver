@@ -8,6 +8,8 @@ import { solveComplex } from '../engine/complexnum';
 import { useDebouncedSolve } from '../hooks/useDebouncedSolve';
 import { useMathHistory } from '../context/HistoryContext';
 import { cleanPlainMath } from '../utils/exportUtils';
+import { MathBlock } from '../components/MathBlock';
+import { toLiveMathTex } from '../engine/liveMath';
 
 const EXAMPLES = ['(3+2i)(1-4i)', '(2+3i)/(1-i)', '(1+i)^8', 'sqrt(-16)', 'i^2026'];
 
@@ -105,8 +107,14 @@ export const ComplexTab = ({ decimal }) => {
                 title={`Click to re-solve: ${item.expression} ${item.answer ? `→ ${item.answer}` : ''}`}
               >
                 <RotateCcw size={10} className="as-recent-chip-icon" />
-                <span className="as-recent-chip-expr">{item.expression}</span>
-                {item.answer && <span className="as-recent-chip-ans">{item.answer}</span>}
+                <span className="as-recent-chip-expr">
+                  <MathBlock tex={item.tex || toLiveMathTex(item.expression).tex || item.expression} inline={true} />
+                </span>
+                {(item.answerTex || item.answer) && (
+                  <span className="as-recent-chip-ans">
+                    <MathBlock tex={item.answerTex || toLiveMathTex(item.answer).tex || item.answer} inline={true} />
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -123,7 +131,7 @@ export const ComplexTab = ({ decimal }) => {
             data-testid={`complex-example-${ex}`}
             onClick={() => handleExample(ex)}
           >
-            {ex}
+            <MathBlock tex={toLiveMathTex(ex).tex || ex} inline={true} />
           </button>
         ))}
       </div>

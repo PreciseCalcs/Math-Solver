@@ -17,6 +17,7 @@ import {
 import { useMathHistory } from '../context/HistoryContext';
 import { formatRelativeTime } from '../utils/historyStorage';
 import { MathBlock, MathText } from './MathBlock';
+import { toLiveMathTex } from '../engine/liveMath';
 
 const TAB_CONFIG = {
   equation: { label: 'Equation', icon: FunctionSquare, color: '#3b82f6', bg: '#eff6ff' },
@@ -162,30 +163,24 @@ export const HistoryPanel = () => {
                   </div>
 
                   <div className="as-history-card-expression">
-                    {hasTex ? (
-                      <div className="as-history-tex">
-                        <MathBlock tex={item.tex} inline={true} />
-                      </div>
-                    ) : (
-                      <div className="as-history-expr-text" title={item.expression}>
-                        <MathText text={item.expression || item.title} inline={true} />
-                      </div>
-                    )}
+                    <div className="as-history-tex">
+                      <MathBlock
+                        tex={item.tex || toLiveMathTex(item.expression || item.title).tex || item.expression}
+                        inline={true}
+                      />
+                    </div>
                   </div>
 
                   {(item.answerTex || item.answer) && (
                     <div className="as-history-card-answer" title={item.answer || item.answerTex}>
                       <CheckCircle2 size={12} className="as-history-check-icon" />
                       <span className="as-history-answer-label">Solution:</span>
-                      {item.answerTex ? (
-                        <span className="as-history-answer-val-tex">
-                          <MathBlock tex={item.answerTex} inline={true} />
-                        </span>
-                      ) : (
-                        <span className="as-history-answer-val">
-                          <MathText text={item.answer} inline={true} />
-                        </span>
-                      )}
+                      <span className="as-history-answer-val-tex">
+                        <MathBlock
+                          tex={item.answerTex || toLiveMathTex(item.answer).tex || item.answer}
+                          inline={true}
+                        />
+                      </span>
                     </div>
                   )}
 
