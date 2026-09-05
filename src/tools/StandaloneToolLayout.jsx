@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
-import { Share2, X, History, ArrowLeft, Sparkles } from 'lucide-react';
+import { Share2, X, History, ArrowLeft, Sparkles, Code } from 'lucide-react';
 import 'katex/dist/katex.min.css';
 import '../tools/AlgebraSolver/AlgebraSolver.css';
 import { ToolSuiteHeader } from '../components/ToolSuiteHeader';
 import { HistoryProvider, useMathHistory } from './AlgebraSolver/context/HistoryContext';
 import { HistoryPanel } from './AlgebraSolver/components/HistoryPanel';
+import { EmbedModal } from '../components/EmbedModal';
 
 const TAB_ROUTES = {
   equation: '/equations',
@@ -17,6 +18,7 @@ const TAB_ROUTES = {
 };
 
 function StandaloneContent({
+  toolKey,
   title,
   subtitle,
   category,
@@ -26,9 +28,11 @@ function StandaloneContent({
   children,
   decimal,
   setDecimal,
+  isEmbed,
 }) {
   const [searchParams] = useSearchParams();
   const { history, isHistoryOpen, setIsHistoryOpen } = useMathHistory();
+  const [isEmbedModalOpen, setIsEmbedModalOpen] = useState(false);
   const [showSharedNotice, setShowSharedNotice] = useState(
     Boolean(
       searchParams.get('q') ||
@@ -39,31 +43,66 @@ function StandaloneContent({
   );
 
   return (
-    <div className="as-standalone-page" data-testid="standalone-tool-page">
-      <main className="as-main">
-        {/* Tool Header Banner */}
-        <div className="as-standalone-hero" style={{ '--tool-accent': color }}>
-          <div className="as-standalone-hero-top">
-            <Link to="/tools" className="as-back-link" title="Return to tools directory">
-              <ArrowLeft size={14} />
-              <span>All Tools</span>
-            </Link>
-            <div className="as-standalone-pills">
-              <span className="as-category-pill">{category}</span>
-              <span className="as-status-pill">{badgeText}</span>
+    <div
+      className={`as-standalone-page ${isEmbed ? 'as-embed-page' : ''}`}
+      data-testid="standalone-tool-page"
+      style={isEmbed ? { minHeight: 'auto', background: 'transparent' } : {}}
+    >
+      <main className={`as-main ${isEmbed ? 'as-embed-main' : ''}`} style={isEmbed ? { padding: '8px 4px 16px' } : {}}>
+        {/* Tool Header Banner - only shown when not embedded or as compact in embed */}
+        {!isEmbed ? (
+          <div className="as-standalone-hero" style={{ '--tool-accent': color }}>
+            <div className="as-standalone-hero-top">
+              <Link to="/tools" className="as-back-link" title="Return to tools directory">
+                <ArrowLeft size={14} />
+                <span>All Tools</span>
+              </Link>
+              <div className="as-standalone-pills">
+                <span className="as-category-pill">{category}</span>
+                <span className="as-status-pill">{badgeText}</span>
+              </div>
             </div>
-          </div>
 
-          <div className="as-standalone-hero-content">
-            <div className="as-standalone-hero-icon" style={{ background: color }}>
-              <Icon size={24} />
-            </div>
-            <div>
-              <h1 className="as-standalone-hero-title">{title}</h1>
-              <p className="as-standalone-hero-subtitle">{subtitle}</p>
+            <div className="as-standalone-hero-content">
+              <div className="as-standalone-hero-icon" style={{ background: color }}>
+                <Icon size={24} />
+              </div>
+              <div>
+                <h1 className="as-standalone-hero-title">{title}</h1>
+                <p className="as-standalone-hero-subtitle">{subtitle}</p>
+              </div>
             </div>
           </div>
-        </div>
+        ) : (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '6px 10px',
+            marginBottom: '6px',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{
+                width: '26px',
+                height: '26px',
+                borderRadius: '6px',
+                background: color,
+                color: '#fff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+                <Icon size={15} />
+              </div>
+              <span style={{ fontWeight: '700', fontSize: '0.95rem', color: '#0f172a' }}>
+                {title}
+              </span>
+            </div>
+            <span style={{ fontSize: '0.72rem', background: '#f1f5f9', color: '#475569', padding: '2px 8px', borderRadius: '12px', fontWeight: '600' }}>
+              {category}
+            </span>
+          </div>
+        )}
 
         {/* Shared Problem Link Alert */}
         {showSharedNotice && (
@@ -86,9 +125,9 @@ function StandaloneContent({
         )}
 
         {/* Main Solver Workstation Card */}
-        <div className="as-card as-standalone-card">
+        <div className={`as-card as-standalone-card ${isEmbed ? 'as-embed-card' : ''}`}>
           <div className="as-toolbar">
-            <div className="as-toolbar-left">
+            <div className="as-toolbar-left" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <button
                 type="button"
                 className={`as-history-trigger-btn ${isHistoryOpen ? 'active' : ''}`}
@@ -104,6 +143,17 @@ function StandaloneContent({
                     {history.length}
                   </span>
                 )}
+              </button>
+
+              <button
+                type="button"
+                className="as-history-trigger-btn"
+                onClick={() => setIsEmbedModalOpen(true)}
+                title="Get WordPress or website embed code"
+                data-testid="embed-trigger-btn"
+              >
+                <Code size={14} />
+                <span>Embed</span>
               </button>
             </div>
 
@@ -132,6 +182,14 @@ function StandaloneContent({
           </div>
         </div>
       </main>
+
+      {/* Embed Code Modal */}
+      <EmbedModal
+        isOpen={isEmbedModalOpen}
+        onClose={() => setIsEmbedModalOpen(false)}
+        toolTitle={title}
+        toolKey={toolKey}
+      />
     </div>
   );
 }
@@ -148,6 +206,7 @@ export function StandaloneToolLayout({
 }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  const isEmbed = searchParams.get('embed') === 'true' || searchParams.get('embed') === '1';
   const initialDecimal = searchParams.get('dec') === '1';
   const [decimal, setDecimalState] = useState(initialDecimal);
 
@@ -172,10 +231,11 @@ export function StandaloneToolLayout({
   };
 
   return (
-    <div className="algebra-solver precise-calcs-app" data-testid={`tool-${toolKey}`}>
-      <ToolSuiteHeader />
+    <div className={`algebra-solver precise-calcs-app ${isEmbed ? 'as-embed-root' : ''}`} data-testid={`tool-${toolKey}`}>
+      {!isEmbed && <ToolSuiteHeader />}
       <HistoryProvider currentTab={toolKey} onTabChange={handleTabChange}>
         <StandaloneContent
+          toolKey={toolKey}
           title={title}
           subtitle={subtitle}
           category={category}
@@ -184,6 +244,7 @@ export function StandaloneToolLayout({
           badgeText={badgeText}
           decimal={decimal}
           setDecimal={setDecimal}
+          isEmbed={isEmbed}
         >
           {children}
         </StandaloneContent>

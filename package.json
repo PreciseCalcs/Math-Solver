@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0 --port 3000",
-    "build": "vite build",
+    "build:widget": "esbuild src/widget-entry.jsx --bundle --minify --loader:.css=text --define:process.env.NODE_ENV='\"production\"' --format=iife --global-name=PreciseCalcsWidget --outfile=public/calculator-widget.js",
+    "build": "npm run build:widget && vite build",
     "preview": "vite preview --host 0.0.0.0 --port 3000"
   },
   "dependencies": {

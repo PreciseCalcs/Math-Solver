@@ -4546,6 +4546,33 @@
   gap: 6px;
 }
 
+/* ==========================================================================
+   WordPress & Web Embed Widget Mode (?embed=true)
+   ========================================================================== */
+.as-embed-root {
+  background: transparent !important;
+  min-height: auto !important;
+  padding: 0 !important;
+}
+
+.as-embed-page {
+  padding: 0 !important;
+  min-height: auto !important;
+  background: transparent !important;
+}
+
+.as-embed-main {
+  max-width: 100% !important;
+  padding: 8px !important;
+  margin: 0 !important;
+}
+
+.as-embed-card {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+  border-radius: 12px !important;
+  margin-bottom: 8px !important;
+}
+
 
 
 
