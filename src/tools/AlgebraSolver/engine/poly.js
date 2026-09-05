@@ -2,7 +2,7 @@
 import {
   math, approxFrac, texFrac, fracPlain, trimNum, fmtVal,
   simplifyRadical, gcdInt, lcmInt, texComplex,
-} from './utils';
+} from './utils.js';
 
 // Extract ascending polynomial coefficients (as Fractions) from an expression string.
 // Throws if not a polynomial (or rational expression reducible to one).
@@ -295,7 +295,71 @@ export function solvePolynomial(ints, v, decimal) {
     return { steps, answers: q.answers, complex: q.complex };
   }
 
-  // degree >= 3: peel off rational roots
+  // 1. Check if GCF contains x (constant term ints[0] === 0)
+  let kZeros = 0;
+  while (kZeros < ints.length && ints[kZeros] === 0) kZeros++;
+
+  if (kZeros > 0) {
+    const gcfPow = kZeros === 1 ? v : `${v}^{${kZeros}}`;
+    const reducedInts = ints.slice(kZeros);
+    steps.push({
+      title: `Factor out the Greatest Common Factor (${gcfPow})`,
+      desc: `Every term has at least ${gcfPow}. By the Zero Product Property, ${v} = 0 (multiplicity ${kZeros}), and we solve the remaining polynomial factor.`,
+      tex: `${gcfPow} \\cdot \\left[\\,${polyTexFromInts(reducedInts, v)}\\,\\right] = 0`,
+    });
+
+    const inner = solvePolynomial(reducedInts, v, decimal);
+    steps.push(...inner.steps.slice(1));
+    const answers = [{ tex: '0', num: 0 }, ...(inner.answers || [])];
+    return { steps, answers };
+  }
+
+  // 2. Check Biquadratic form: a*x^4 + b*x^2 + c = 0
+  if (deg === 4 && ints[1] === 0 && ints[3] === 0) {
+    const a = ints[4], b = ints[2], c = ints[0];
+    steps.push({
+      title: 'Substitute u = x² (Quadratic Form)',
+      desc: `Since only even powers (x⁴ and x²) appear, substitute u = ${v}² to transform into a quadratic equation in u.`,
+      tex: `${a === 1 ? '' : a}u^2 ${b < 0 ? `- ${Math.abs(b)}` : `+ ${b}`}u ${c < 0 ? `- ${Math.abs(c)}` : `+ ${c}`} = 0`,
+    });
+
+    const quadU = solveQuadraticInt(a, b, c, 'u', decimal);
+    steps.push(...quadU.steps.slice(1));
+
+    const answers = [];
+    quadU.answers.forEach((ansU) => {
+      if (typeof ansU.num === 'number') {
+        const uVal = ansU.num;
+        if (uVal >= 0) {
+          const sqrtU = Math.sqrt(uVal);
+          const f = approxFrac(sqrtU);
+          const sTex = f ? texFrac(f) : trimNum(sqrtU);
+          steps.push({
+            title: `Solve for ${v} from u = ${ansU.tex}`,
+            desc: `Take square roots: ${v} = ±√(${ansU.tex}).`,
+            tex: `${v} = \\pm ${sTex}`,
+          });
+          answers.push({ tex: sTex, num: sqrtU });
+          answers.push({ tex: `-${sTex}`, num: -sqrtU });
+        } else {
+          const sqrtAbs = Math.sqrt(-uVal);
+          const f = approxFrac(sqrtAbs);
+          const sTex = f ? (texFrac(f) === '1' ? '' : texFrac(f)) : trimNum(sqrtAbs);
+          steps.push({
+            title: `Solve for ${v} from u = ${ansU.tex} (Imaginary roots)`,
+            desc: `Take square roots: ${v} = ±√(${ansU.tex}) = ±√(${-ansU.tex})·i.`,
+            tex: `${v} = \\pm ${sTex}i`,
+          });
+          answers.push({ tex: `${sTex}i`, complex: true });
+          answers.push({ tex: `-${sTex}i`, complex: true });
+        }
+      }
+    });
+
+    return { steps, answers };
+  }
+
+  // 3. degree >= 3: peel off rational roots
   let work = [...ints];
   const answers = [];
   while (work.length - 1 > 2) {

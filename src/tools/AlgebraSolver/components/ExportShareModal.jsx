@@ -13,7 +13,9 @@ import {
   Sparkles,
   ExternalLink,
   BookOpen,
+  Eye,
 } from 'lucide-react';
+import { MathBlock, MathText } from './MathBlock';
 import {
   generateLatexDocument,
   generateLatexSnippet,
@@ -36,6 +38,7 @@ export const ExportShareModal = ({
 }) => {
   const [activeTab, setActiveTab] = useState('share'); // 'share' | 'latex' | 'markdown' | 'text' | 'print'
   const [latexMode, setLatexMode] = useState('full'); // 'full' | 'snippet'
+  const [latexViewType, setLatexViewType] = useState('code'); // 'code' | 'render'
   const [qrUrl, setQrUrl] = useState('');
   const [copiedKey, setCopiedKey] = useState(null);
 
@@ -296,6 +299,27 @@ export const ExportShareModal = ({
                   </button>
                 </div>
 
+                <div className="as-sub-toggle-group as-view-type-toggle">
+                  <button
+                    type="button"
+                    className={`as-sub-toggle ${latexViewType === 'code' ? 'active' : ''}`}
+                    onClick={() => setLatexViewType('code')}
+                    title="View raw LaTeX code"
+                  >
+                    <Code2 size={13} />
+                    <span>LaTeX Code</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`as-sub-toggle ${latexViewType === 'render' ? 'active' : ''}`}
+                    onClick={() => setLatexViewType('render')}
+                    title="View KaTeX rendered layout"
+                  >
+                    <Eye size={13} />
+                    <span>KaTeX Preview</span>
+                  </button>
+                </div>
+
                 <div className="as-pane-actions">
                   <button
                     type="button"
@@ -328,16 +352,80 @@ export const ExportShareModal = ({
                 </div>
               </div>
 
-              <div className="as-code-preview-wrap">
-                <pre className="as-code-preview" data-testid="latex-code-preview">
-                  <code>{latexMode === 'full' ? latexFull : latexSnippet}</code>
-                </pre>
-              </div>
+              {latexViewType === 'render' ? (
+                <div className="as-latex-render-preview" data-testid="latex-rendered-preview">
+                  <div className="as-render-paper">
+                    <div className="as-render-paper-header">
+                      <span className="as-render-paper-tag">KaTeX Typeset Document</span>
+                      <h3 className="as-render-paper-title">
+                        <MathText text={problemTitle || 'Mathematical Solution'} inline />
+                      </h3>
+                    </div>
+
+                    {problemTex && (
+                      <div className="as-render-paper-section">
+                        <div className="as-render-paper-subtitle">Problem Formulation:</div>
+                        <div className="as-render-paper-math">
+                          <MathBlock tex={problemTex} />
+                        </div>
+                      </div>
+                    )}
+
+                    {result.steps && result.steps.length > 0 && (
+                      <div className="as-render-paper-section">
+                        <div className="as-render-paper-subtitle">Step-by-Step Derivation:</div>
+                        <div className="as-render-paper-steps">
+                          {result.steps.map((st, sIdx) => (
+                            <div key={sIdx} className="as-render-step-item">
+                              <div className="as-render-step-head">
+                                <span className="as-render-step-idx">{sIdx + 1}.</span>
+                                <span className="as-render-step-title">
+                                  <MathText text={st.title} inline />
+                                </span>
+                              </div>
+                              {st.desc && (
+                                <div className="as-render-step-desc">
+                                  <MathText text={st.desc} />
+                                </div>
+                              )}
+                              {st.tex && (
+                                <div className="as-render-step-tex">
+                                  <MathBlock tex={st.tex} />
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {result.answerTex && (
+                      <div className="as-render-paper-section as-render-final-section">
+                        <div className="as-render-paper-subtitle">Final Result:</div>
+                        <div className="as-render-final-box">
+                          <MathBlock tex={result.answerTex} />
+                        </div>
+                        {result.answerNote && (
+                          <div className="as-render-paper-note">
+                            <MathText text={result.answerNote} />
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="as-code-preview-wrap">
+                  <pre className="as-code-preview" data-testid="latex-code-preview">
+                    <code>{latexMode === 'full' ? latexFull : latexSnippet}</code>
+                  </pre>
+                </div>
+              )}
 
               <div className="as-info-callout">
                 <Sparkles size={14} />
                 <span>
-                  <strong>Overleaf Ready:</strong> You can paste this directly into Overleaf or your LaTeX project. It includes geometry and fancyhdr for a formal homework handout.
+                  <strong>KaTeX / Overleaf Ready:</strong> Mathematical equations are compiled using KaTeX and standardized LaTeX math environments (e.g. <code>aligned</code>, <code>bmatrix</code>, <code>cases</code>). Ready for export to Overleaf, MS Word, or Paper.
                 </span>
               </div>
             </div>

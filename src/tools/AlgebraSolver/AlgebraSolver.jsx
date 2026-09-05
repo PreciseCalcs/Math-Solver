@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { FunctionSquare, Rows3, Grid3x3, Sigma, Hash, Share2, X, History } from 'lucide-react';
+import { FunctionSquare, Rows3, Grid3x3, Divide, Sigma, Hash, Share2, X, History } from 'lucide-react';
 import 'katex/dist/katex.min.css';
 import './AlgebraSolver.css';
 import { EquationTab } from './tabs/EquationTab';
 import { SystemTab } from './tabs/SystemTab';
 import { MatrixTab } from './tabs/MatrixTab';
+import { PolynomialTab } from './tabs/PolynomialTab';
 import { SeriesTab } from './tabs/SeriesTab';
 import { ComplexTab } from './tabs/ComplexTab';
 import { HistoryProvider, useMathHistory } from './context/HistoryContext';
@@ -15,6 +16,7 @@ const TABS = [
   { key: 'equation', label: 'Equation', icon: FunctionSquare, Component: EquationTab },
   { key: 'system', label: 'System', icon: Rows3, Component: SystemTab },
   { key: 'matrix', label: 'Matrix', icon: Grid3x3, Component: MatrixTab },
+  { key: 'polynomial', label: 'Polynomial', icon: Divide, Component: PolynomialTab },
   { key: 'series', label: 'Series', icon: Sigma, Component: SeriesTab },
   { key: 'complex', label: 'Complex', icon: Hash, Component: ComplexTab },
 ];

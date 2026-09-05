@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { StepsView } from '../components/StepsView';
+import { MathBlock } from '../components/MathBlock';
 import { arithmeticSeries, geometricSeries, summation, binomialExpansion } from '../engine/series';
 import { useMathHistory } from '../context/HistoryContext';
 import { cleanPlainMath } from '../utils/exportUtils';
@@ -184,6 +185,17 @@ export const SeriesTab = ({ decimal }) => {
         </div>
       )}
       {mode === 'binomial' && <p className="as-hint">Expands (a + b)ⁿ — e.g. (2x − 3)⁴. Enter the second term with its sign.</p>}
+
+      {probTex && (
+        <div className="as-live-math-container" style={{ marginTop: '12px', marginBottom: '12px' }}>
+          <div className="as-live-math-header">
+            <span className="as-live-math-title">Formula Preview (LaTeX)</span>
+          </div>
+          <div className="as-live-math-card">
+            <MathBlock tex={probTex} />
+          </div>
+        </div>
+      )}
 
       <button type="button" className="as-solve-btn" data-testid="series-compute-btn" onClick={compute}>
         Compute

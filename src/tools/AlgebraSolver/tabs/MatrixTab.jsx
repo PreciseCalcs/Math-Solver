@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { StepsView } from '../components/StepsView';
+import { MathBlock } from '../components/MathBlock';
 import { MATRIX_OPS } from '../engine/matrix';
 import { useMathHistory } from '../context/HistoryContext';
 import { cleanPlainMath } from '../utils/exportUtils';
@@ -138,6 +139,18 @@ export const MatrixTab = ({ decimal }) => {
         ))}
       </div>
       <p className="as-hint">Fractions allowed in cells, e.g. 1/2 or -3/4.</p>
+
+      {cells.length > 0 && (
+        <div className="as-live-math-container" style={{ marginTop: '12px', marginBottom: '12px' }}>
+          <div className="as-live-math-header">
+            <span className="as-live-math-title">Matrix Preview (LaTeX)</span>
+          </div>
+          <div className="as-live-math-card">
+            <MathBlock tex={`\\begin{bmatrix} ${cells.map((r) => r.join(' & ')).join(' \\\\ ')} \\end{bmatrix}`} />
+          </div>
+        </div>
+      )}
+
       <button type="button" className="as-solve-btn" data-testid="matrix-compute-btn" onClick={compute}>
         Compute
       </button>

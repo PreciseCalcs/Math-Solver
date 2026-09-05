@@ -12,14 +12,16 @@ import {
   CheckCircle2,
   Clock,
   ArrowRight,
+  Divide,
 } from 'lucide-react';
 import { useMathHistory } from '../context/HistoryContext';
 import { formatRelativeTime } from '../utils/historyStorage';
-import { MathBlock } from './MathBlock';
+import { MathBlock, MathText } from './MathBlock';
 
 const TAB_CONFIG = {
   equation: { label: 'Equation', icon: FunctionSquare, color: '#3b82f6', bg: '#eff6ff' },
   system: { label: 'System', icon: Rows3, color: '#8b5cf6', bg: '#f5f3ff' },
+  polynomial: { label: 'Polynomial', icon: Divide, color: '#ea580c', bg: '#fff7ed' },
   matrix: { label: 'Matrix', icon: Grid3x3, color: '#10b981', bg: '#ecfdf5' },
   series: { label: 'Series', icon: Sigma, color: '#f59e0b', bg: '#fffbeb' },
   complex: { label: 'Complex', icon: Hash, color: '#ec4899', bg: '#fdf2f8' },
@@ -166,16 +168,24 @@ export const HistoryPanel = () => {
                       </div>
                     ) : (
                       <div className="as-history-expr-text" title={item.expression}>
-                        {item.expression || item.title}
+                        <MathText text={item.expression || item.title} inline={true} />
                       </div>
                     )}
                   </div>
 
-                  {item.answer && (
-                    <div className="as-history-card-answer" title={item.answer}>
+                  {(item.answerTex || item.answer) && (
+                    <div className="as-history-card-answer" title={item.answer || item.answerTex}>
                       <CheckCircle2 size={12} className="as-history-check-icon" />
                       <span className="as-history-answer-label">Solution:</span>
-                      <span className="as-history-answer-val">{item.answer}</span>
+                      {item.answerTex ? (
+                        <span className="as-history-answer-val-tex">
+                          <MathBlock tex={item.answerTex} inline={true} />
+                        </span>
+                      ) : (
+                        <span className="as-history-answer-val">
+                          <MathText text={item.answer} inline={true} />
+                        </span>
+                      )}
                     </div>
                   )}
 

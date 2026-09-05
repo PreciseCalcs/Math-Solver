@@ -4,7 +4,7 @@ import { History, RotateCcw } from 'lucide-react';
 import { SymbolKeyboard, insertAtCursor, backspaceAtCursor } from '../components/SymbolKeyboard';
 import { StepsView } from '../components/StepsView';
 import { UnifiedMathCard } from '../components/UnifiedMathCard';
-import { solveEquation } from '../engine/equation';
+import { solveEquation } from '../engine/equation.js';
 import { useDebouncedSolve } from '../hooks/useDebouncedSolve';
 import { useMathHistory } from '../context/HistoryContext';
 import { cleanPlainMath } from '../utils/exportUtils';
@@ -14,12 +14,14 @@ const EXAMPLES = [
   'x^2-5x+6=0',
   'x^3-6x^2+11x-6=0',
   '(x+1)/(x-2)=3',
-  '√(2x+3)=5',
+  'sqrt(2x+3)=5',
   '|2x-3|=7',
   '2^x=32',
+  'log(x)+log(x-3)=1',
   'sin(x)=1/2',
-  'x^2-4x+13=0',
-  '3x+2<11',
+  '3-2x<=9',
+  '2x+3y=6, solve for y',
+  'x^4-5x^2+4=0',
 ];
 
 export const EquationTab = ({ decimal }) => {

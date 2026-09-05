@@ -2,8 +2,17 @@
 import {
   math, preprocess, texExpr, getVariables, containsSymbol,
   approxFrac, texFrac, trimNum, fmtVal,
-} from './utils';
-import { polyCoeffsFromExpr, integerizeFr, solvePolynomial, polyTexFromFracs } from './poly';
+} from './utils.js';
+import { polyCoeffsFromExpr, integerizeFr, solvePolynomial, polyTexFromFracs } from './poly.js';
+import { solveLinearEquation } from './linearSolver.js';
+import { solveQuadraticEquation } from './quadraticSolver.js';
+import { solveRationalEquation } from './rationalSolver.js';
+import { solveRadicalEquation } from './radicalSolver.js';
+import { solveAbsEquation } from './absSolver.js';
+import { solveExpEquation, solveLogEquation } from './expLogSolver.js';
+import { solveTrigEquation } from './trigSolver.js';
+import { solveLiteralEquation, extractTargetVar } from './literalSolver.js';
+import { solveInequality } from './inequalitySolver.js';
 
 const SPECIAL_FUNCS = ['sqrt', 'abs', 'sin', 'cos', 'tan', 'log', 'log10', 'log2', 'exp'];
 
@@ -443,7 +452,11 @@ function analyzeExpression(s, decimal) {
     const val = math.evaluate(s);
     const num = typeof val === 'number' ? val : null;
     const tex = num !== null ? fmtVal(num, decimal) : math.format(val);
-    steps.push({ title: 'Evaluate', desc: 'The expression contains no variables, so it evaluates to a single value.', tex: `${node.toTex({ implicit: 'hide' })} = ${tex}` });
+    steps.push({
+      title: 'Evaluate numerical value',
+      desc: 'The expression contains no variables, so it simplifies directly to a numerical value.',
+      tex: `${node.toTex({ implicit: 'hide' })} = ${tex}`,
+    });
     const extra = num !== null && !decimal && !Number.isInteger(num) ? ` \\approx ${trimNum(num)}` : '';
     return { steps, answerTex: `${tex}${extra}` };
   }
@@ -451,18 +464,34 @@ function analyzeExpression(s, decimal) {
   let simplified;
   try { simplified = math.simplify(node); } catch { simplified = node; }
   steps.push({
-    title: 'Simplify',
-    desc: 'Combine like terms and reduce.',
+    title: 'Simplify algebraic expression',
+    desc: 'Combine like terms, distribute operations, and reduce.',
     tex: simplified.toTex({ implicit: 'hide' }),
   });
   let answerTex = simplified.toTex({ implicit: 'hide' });
+
   if (vars.length === 1) {
+    const v = vars[0];
     try {
-      const { coeffs, denomStr } = polyCoeffsFromExpr(s, vars[0]);
+      const { coeffs, denomStr } = polyCoeffsFromExpr(s, v);
       if (!denomStr) {
-        const expandedTex = polyTexFromFracs(coeffs, vars[0]);
-        steps.push({ title: 'Expanded form', desc: '', tex: expandedTex });
-        answerTex = expandedTex;
+        const expandedTex = polyTexFromFracs(coeffs, v);
+        if (expandedTex !== answerTex) {
+          steps.push({ title: 'Expanded polynomial form', desc: 'Standard descending order form.', tex: expandedTex });
+          answerTex = expandedTex;
+        }
+
+        // If quadratic, show factoring & zeros
+        if (coeffs.length === 3) {
+          const qRes = solveQuadraticEquation(s, '0', v, decimal);
+          if (qRes && qRes.steps) {
+            steps.push({
+              title: 'Zeros / roots of the polynomial (P(x) = 0)',
+              desc: 'Values of the variable that make the expression equal to zero.',
+              tex: qRes.answerTex,
+            });
+          }
+        }
       }
     } catch { /* not polynomial */ }
   }
@@ -471,21 +500,27 @@ function analyzeExpression(s, decimal) {
 
 // ---------- inequalities ----------
 
-function solveInequality(s, opts) {
+function solveInequalityEntry(s, opts) {
   const decimal = !!opts?.decimal;
   const m = s.match(/(<=|>=|<|>)/);
   const op = m[1];
   const [Lr, Rr] = s.split(op);
   if (!Lr?.trim() || !Rr?.trim()) return { error: 'Both sides of the inequality must be non-empty.' };
+
+  let node;
+  try { node = math.parse(`(${Lr}) - (${Rr})`); } catch { node = null; }
+  const vars = node ? getVariables(node) : [];
+  const v = vars[0] || 'x';
+
+  const ineqRes = solveInequality(Lr.trim(), Rr.trim(), op, v, decimal);
+  if (ineqRes) return ineqRes;
+
   const steps = [];
   const opTex = { '<': '<', '>': '>', '<=': '\\le', '>=': '\\ge' }[op];
   steps.push({ title: 'Original inequality', desc: '', tex: `${texExpr(Lr)} ${opTex} ${texExpr(Rr)}` });
 
   const exprStr = `(${Lr}) - (${Rr})`;
-  const node = math.parse(exprStr);
-  const vars = getVariables(node);
   if (vars.length !== 1) return { error: 'Inequalities are supported with exactly one variable.' };
-  const v = vars[0];
 
   let res;
   try {
@@ -564,49 +599,89 @@ export function solveEquation(raw, opts = {}) {
   const decimal = !!opts.decimal;
   try {
     if (!raw || !String(raw).trim()) return { error: 'Enter an equation or expression first.' };
-    const s = preprocess(raw);
 
-    if (/(<=|>=|<|>)/.test(s)) return solveInequality(s, opts);
+    // 1. Literal equation directive check (e.g. "solve for x: 2x + 3y = 6" or "2x + 3y = 6, y")
+    const { targetVar, cleanInput } = extractTargetVar(raw);
+    const s = preprocess(cleanInput);
+
+    // 2. Inequality check (<=, >=, <, >)
+    if (/(<=|>=|<|>)/.test(s)) return solveInequalityEntry(s, opts);
+
+    // 3. Expression without '=' sign
     if (!s.includes('=')) return analyzeExpression(s, decimal);
 
     const parts = s.split('=');
     if (parts.length !== 2 || !parts[0].trim() || !parts[1].trim()) {
       return { error: 'Use exactly one "=" sign with expressions on both sides, e.g. 2x + 3 = 11.' };
     }
-    const [L, R] = parts;
-    const steps = [{ title: 'Original equation', desc: '', tex: `${texExpr(L)} = ${texExpr(R)}` }];
+    const [L, R] = [parts[0].trim(), parts[1].trim()];
     const exprStr = `(${L}) - (${R})`;
     const node = math.parse(exprStr);
     const vars = getVariables(node);
 
+    // 4. Multiple variables -> Literal Equation / Formula
+    if (vars.length > 1) {
+      const chosenVar = targetVar && vars.includes(targetVar)
+        ? targetVar
+        : (vars.includes('y') ? 'y' : vars.includes('x') ? 'x' : vars[0]);
+      const litRes = solveLiteralEquation(L, R, chosenVar);
+      if (litRes) return litRes;
+      return { error: `Multiple variables detected (${vars.join(', ')}). Specify which variable to solve for (e.g. ", solve for ${vars[0]}") or use the System tab for simultaneous equations.` };
+    }
+
+    // 5. Zero variables -> Arithmetic Identity or Contradiction
     if (vars.length === 0) {
       const lv = math.evaluate(L), rv = math.evaluate(R);
       const eq = Math.abs(Number(lv) - Number(rv)) < 1e-12;
-      steps.push({
-        title: 'Evaluate both sides',
-        desc: '',
-        tex: `${trimNum(Number(lv))} ${eq ? '=' : '\\neq'} ${trimNum(Number(rv))}`,
-      });
+      const steps = [
+        { title: 'Original equation', desc: '', tex: `${texExpr(L)} = ${texExpr(R)}` },
+        {
+          title: 'Evaluate both sides',
+          desc: '',
+          tex: `${trimNum(Number(lv))} ${eq ? '=' : '\\neq'} ${trimNum(Number(rv))}`,
+        },
+      ];
       return { steps, answerTex: eq ? '\\text{True (identity)}' : '\\text{False (contradiction)}' };
     }
-    if (vars.length > 1) {
-      return { error: `Multiple variables detected (${vars.join(', ')}). Use the System tab for simultaneous equations, or keep a single unknown.` };
-    }
+
     const v = vars[0];
 
-    try {
-      const simp = math.simplify(exprStr).toString();
-      if (simp !== exprStr) {
-        steps.push({
-          title: 'Move everything to one side',
-          desc: 'Subtract the right side from the left so the equation equals zero, then combine like terms.',
-          tex: `${texExpr(simp)} = 0`,
-        });
-      }
-    } catch { /* skip */ }
+    // 6. Absolute Value Equation
+    const absRes = solveAbsEquation(L, R, v, decimal);
+    if (absRes) return absRes;
 
+    // 7. Radical Equation (sqrt, cbrt, nthRoot)
+    const radRes = solveRadicalEquation(L, R, v, decimal);
+    if (radRes) return radRes;
+
+    // 8. Logarithmic Equation (log, ln, log10, log2)
+    const logRes = solveLogEquation(L, R, v, decimal);
+    if (logRes) return logRes;
+
+    // 9. Exponential Equation (b^(f(x)) = C or e^(f(x)) = C)
+    const expRes = solveExpEquation(L, R, v, decimal);
+    if (expRes) return expRes;
+
+    // 10. Trigonometric Equation (sin, cos, tan)
+    const trigRes = solveTrigEquation(L, R, v, decimal);
+    if (trigRes) return trigRes;
+
+    // 11. Rational Equation (fractions with variable in denominator)
+    const ratRes = solveRationalEquation(L, R, v, decimal);
+    if (ratRes) return ratRes;
+
+    // 12. Linear Equation (LCD clearing, distributive property, variable isolation, verification)
+    const linRes = solveLinearEquation(L, R, v, decimal);
+    if (linRes) return linRes;
+
+    // 13. Quadratic Equation (standard form, factoring / square root / quadratic formula / complex roots)
+    const quadRes = solveQuadraticEquation(L, R, v, decimal);
+    if (quadRes) return quadRes;
+
+    // 14. Higher-Degree Polynomial (Cubic, Quartic, Durand-Kerner)
     try {
       const res = solvePolyPath(exprStr, v, decimal);
+      const steps = [{ title: 'Original equation', desc: '', tex: `${texExpr(L)} = ${texExpr(R)}` }];
       steps.push(...res.steps);
       if (res.identity) return { steps, answerTex: '\\text{All real numbers (identity)}' };
       if (res.contradiction) return { steps, answerTex: '\\text{No solution (contradiction)}' };
@@ -616,9 +691,11 @@ export function solveEquation(raw, opts = {}) {
         answerTex: answersToTex(res.answers, v),
         answerNote: res.answers.some((a) => a.approx) ? 'Roots marked numerically are accurate to ~10 digits.' : null,
       };
-    } catch {
-      return solveNonPolynomial(L, R, exprStr, v, decimal, steps);
-    }
+    } catch {}
+
+    // 15. Non-polynomial fallback / numerical roots
+    const steps = [{ title: 'Original equation', desc: '', tex: `${texExpr(L)} = ${texExpr(R)}` }];
+    return solveNonPolynomial(L, R, exprStr, v, decimal, steps);
   } catch (e) {
     return { error: `Could not parse the input. Check the syntax — e.g. use 2x + 3 = 11 or x^2 - 5x + 6 = 0. (${e.message})` };
   }

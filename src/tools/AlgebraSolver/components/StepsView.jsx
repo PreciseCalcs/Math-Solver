@@ -16,8 +16,9 @@ import {
   EyeOff,
   Sparkles,
 } from 'lucide-react';
-import { MathBlock } from './MathBlock';
+import { MathBlock, MathText } from './MathBlock';
 import { ExportShareModal } from './ExportShareModal';
+import { CoordinatePlane } from './CoordinatePlane';
 import {
   copyToClipboard,
   buildShareUrl,
@@ -35,6 +36,18 @@ export const StepsView = ({
 }) => {
   const [modalOpen, setModalOpen] = useState(false);
   const [copiedKey, setCopiedKey] = useState(null);
+  const [showGraph, setShowGraph] = useState(true);
+
+  const rawInput = problemTex || shareParams?.q || '';
+  const isPlottable = Boolean(
+    rawInput &&
+    typeof rawInput === 'string' &&
+    rawInput.trim().length > 0 &&
+    !result?.error &&
+    !rawInput.includes('\\begin{matrix}') &&
+    !rawInput.includes('\\sum') &&
+    !rawInput.includes('bmatrix')
+  );
 
   const totalSteps = result?.steps?.length || 0;
 
@@ -255,7 +268,7 @@ export const StepsView = ({
               {result.answerNote && (
                 <span className="as-hero-note-badge" title={result.answerNote}>
                   <Sparkles size={11} />
-                  <span>{result.answerNote}</span>
+                  <span><MathText text={result.answerNote} inline /></span>
                 </span>
               )}
               {totalSteps > 0 && (
@@ -267,6 +280,18 @@ export const StepsView = ({
             </div>
 
             <div className="as-hero-quick-actions">
+              {isPlottable && (
+                <button
+                  type="button"
+                  className={`as-hero-action-pill ${showGraph ? 'active' : ''}`}
+                  onClick={() => setShowGraph((prev) => !prev)}
+                  title={showGraph ? 'Hide coordinate plane' : 'Show coordinate plane'}
+                  data-testid="toggle-graph-view-btn"
+                >
+                  {showGraph ? <EyeOff size={11} /> : <Eye size={11} />}
+                  <span>{showGraph ? 'Hide Graph' : 'Show Graph'}</span>
+                </button>
+              )}
               <button
                 type="button"
                 className="as-hero-action-pill"
@@ -294,7 +319,7 @@ export const StepsView = ({
 
           {/* Hero Math Display with High Contrast Typography */}
           <div className="as-hero-math-display" data-testid="hero-math-display">
-            <MathBlock tex={result.answerTex} />
+            <MathBlock tex={result.answerTex} copyable={true} />
           </div>
 
           {/* Hero Card Footer Controls */}
@@ -323,6 +348,17 @@ export const StepsView = ({
           )}
         </div>
       ) : null}
+
+      {/* =========================================================================
+          INTERACTIVE COORDINATE PLANE (Visual Solution)
+          ========================================================================= */}
+      {isPlottable && showGraph && (
+        <CoordinatePlane
+          rawInput={rawInput}
+          result={result}
+          variable="x"
+        />
+      )}
 
       {/* =========================================================================
           COLLAPSIBLE STEPS SECTION (Step-by-Step Derivation with Accordion Cards)
@@ -378,7 +414,9 @@ export const StepsView = ({
                   >
                     <div className="as-step-card-header-left">
                       <span className="as-step-num-pill">{i + 1}</span>
-                      <span className="as-step-card-title">{s.title}</span>
+                      <span className="as-step-card-title">
+                        <MathText text={s.title} inline />
+                      </span>
                     </div>
 
                     <div className="as-step-card-header-right">
@@ -411,10 +449,14 @@ export const StepsView = ({
                       className="as-step-card-body"
                       data-testid={`step-body-${i + 1}`}
                     >
-                      {s.desc ? <p className="as-step-desc">{s.desc}</p> : null}
+                      {s.desc ? (
+                        <div className="as-step-desc">
+                          <MathText text={s.desc} />
+                        </div>
+                      ) : null}
                       {s.tex ? (
                         <div className="as-step-math">
-                          <MathBlock tex={s.tex} />
+                          <MathBlock tex={s.tex} copyable={true} />
                         </div>
                       ) : null}
                     </div>
