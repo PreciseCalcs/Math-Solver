@@ -43,7 +43,7 @@ export const ACTIVE_TOOLS = [
     badge: 'Active',
     category: 'Linear Algebra',
     color: '#4f46e5',
-    desc: 'Determinants, inverses, eigenvalues, rank & RREF',
+    desc: 'Arithmetic (A±B, A×B), powers (Aᵏ), trace, norms, null/col space, LU decomp & RREF',
   },
   {
     path: '/polynomial',

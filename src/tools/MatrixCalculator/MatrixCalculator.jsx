@@ -8,7 +8,7 @@ export default function MatrixCalculator() {
     <StandaloneToolLayout
       toolKey="matrix"
       title="Matrix Calculator"
-      subtitle="Matrix operations, determinants, matrix inverse, eigenvalues & eigenvectors, rank, trace, RREF, LU decomposition, and powers with step-by-step mathematical derivations."
+      subtitle="Matrix arithmetic (A + B, A − B, A × B), scalar scaling, powers (Aᵏ), trace, matrix norms, null space, column & row spaces, LU decomposition, determinants, inverses, eigenvalues, rank, and RREF with complete step-by-step mathematical derivations."
       category="Linear Algebra"
       icon={Grid3x3}
       color="#4f46e5"
